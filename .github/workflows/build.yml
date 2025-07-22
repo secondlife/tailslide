@@ -40,9 +40,9 @@ jobs:
       - name: Merge coverage data
         if: ${{matrix.check_coverage}}
         run: |
-          llvm-profdata merge default.profraw -o default.profdata
-          llvm-cov report -ignore-filename-regex=\(tests\|extern\)/.* -show-region-summary=false --instr-profile default.profdata build/tailslide-test
-          llvm-cov export -ignore-filename-regex=\(tests\|extern\)/.* -format lcov --instr-profile default.profdata build/tailslide-test > coverage.info
+          llvm-profdata-14 merge default.profraw -o default.profdata
+          llvm-cov-14 report -ignore-filename-regex=\(tests\|extern\)/.* -show-region-summary=false --instr-profile default.profdata build/tailslide-test
+          llvm-cov-14 export -ignore-filename-regex=\(tests\|extern\)/.* -format lcov --instr-profile default.profdata build/tailslide-test > coverage.info
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
