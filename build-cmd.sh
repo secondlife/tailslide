@@ -79,7 +79,7 @@ pushd "$TAILSLIDE_SOURCE_DIR"
       CFLAGS="$opts" CXXFLAGS="$opts" \
           cmake "$native_top" -DCMAKE_INSTALL_LIBDIR="$native_stage_lib" -DCMAKE_BUILD_TYPE=Release \
           -DTAILSLIDE_BUILD_TESTS=off -DTAILSLIDE_BUILD_CLI=off
-      cmake --build . --config Release
+      cmake --build . --config Release -- -j2
       cmake --install . --prefix "$native_stage"
       mkdir -p "$stage/lib/release"
       mv "$stage/lib/${lib_prefix}tailslide.$static_lib_ext" "$stage/lib/release/${lib_prefix}tailslide.$static_lib_ext"
