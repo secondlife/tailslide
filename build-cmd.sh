@@ -78,9 +78,9 @@ pushd "$TAILSLIDE_SOURCE_DIR"
       # Note that the library is _not_ stripped!
       CFLAGS="$opts" CXXFLAGS="$opts" \
           cmake "$native_top" -DCMAKE_INSTALL_LIBDIR="$native_stage_lib" -DCMAKE_BUILD_TYPE=Release \
-          -DTAILSLIDE_BUILD_TESTS=off -DTAILSLIDE_BUILD_CLI=off
+          -DTAILSLIDE_BUILD_TESTS=off -DTAILSLIDE_BUILD_CLI=off -DCMAKE_INSTALL_PREFIX:PATH="${native_stage}"
       cmake --build . --config Release -- -j2
-      cmake --install . --prefix "$native_stage"
+      VERBOSE=1 make install
       mkdir -p "$stage/lib/release"
       mv "$stage/lib/${lib_prefix}tailslide.$static_lib_ext" "$stage/lib/release/${lib_prefix}tailslide.$static_lib_ext"
     popd

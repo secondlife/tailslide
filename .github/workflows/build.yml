@@ -44,17 +44,17 @@ jobs:
           llvm-cov-14 report -ignore-filename-regex=\(tests\|extern\)/.* -show-region-summary=false --instr-profile default.profdata build/tailslide-test
           llvm-cov-14 export -ignore-filename-regex=\(tests\|extern\)/.* -format lcov --instr-profile default.profdata build/tailslide-test > coverage.info
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        if: ${{matrix.check_coverage}}
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.info
-          directory: ./coverage/reports/
-          name: codecov-umbrella
-          fail_ci_if_error: false
-          path_to_write_report: ./coverage/codecov_report.txt
-          verbose: false
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v1
+#        if: ${{matrix.check_coverage}}
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          files: ./coverage.info
+#          directory: ./coverage/reports/
+#          name: codecov-umbrella
+#          fail_ci_if_error: false
+#          path_to_write_report: ./coverage/codecov_report.txt
+#          verbose: false
 
   build:
     needs: test
