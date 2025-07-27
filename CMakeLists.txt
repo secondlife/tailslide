@@ -78,8 +78,8 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if (TAILSLIDE_SANITIZE)
-  add_compile_options("-fsanitize=address" "-O1")
-  add_link_options("-fsanitize=address")
+  add_compile_options("-fsanitize=address" "-O1" "-g")
+  add_link_options("-fsanitize=address" "-g")
 endif()
 
 if (TAILSLIDE_FUZZER_INSTRUMENTATION)
@@ -213,8 +213,8 @@ endif()
 
 
 if (TAILSLIDE_BUILD_FUZZER)
-  if ( NOT (${CMAKE_SYSTEM_NAME} STREQUAL "Linux") )
-    message(FATAL_ERROR "The libFuzzer harness is only supported under Linux!")
+  if ( NOT UNIX )
+    message(FATAL_ERROR "The libFuzzer harness is only supported under *NIX!")
   endif()
   if ( NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang") )
     message(FATAL_ERROR "The libFuzzer harness is only supported under Clang, not ${CMAKE_CXX_COMPILER_ID}")
