@@ -285,7 +285,7 @@ LSLConstant *LSLExpression::getConstantValue() {
 
 LSLConstant *LSLLValueExpression::getConstantValue() {
   if (_mIsFoldable) {
-    if (_mInGlobalContext && !_mConstantValue) {
+    if (_mInGlobalContext && !_mConstantValue && getSymbol()) {
       return getSymbol()->getInitialValue();
     }
 

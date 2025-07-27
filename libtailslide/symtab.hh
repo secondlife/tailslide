@@ -33,11 +33,11 @@ class LSLSymbol: public TrackableObject {
   public:
     LSLSymbol( ScriptContext *ctx, const char *name, class LSLType *type, LSLSymbolType symbol_type, LSLSymbolSubType sub_type, YYLTYPE *lloc, class LSLParamList *function_decl = NULL, class LSLASTNode *var_decl = NULL, class LSLLabel *label_decl = NULL  )
       : TrackableObject(ctx), _mName(name), _mType(type), _mSymbolType(symbol_type), _mSubType(sub_type), _mLoc(*lloc), _mFunctionDecl(function_decl), _mVarDecl(var_decl),
-        _mLabelDecl(label_decl), _mConstantValue(NULL), _mReferences(0), _mAssignments(0), _mMangledName(NULL) {};
+        _mLabelDecl(label_decl), _mConstantValue(NULL), _mInitialValue(NULL), _mReferences(0), _mAssignments(0), _mMangledName(NULL) {};
 
     LSLSymbol( ScriptContext *ctx, const char *name, class LSLType *type, LSLSymbolType symbol_type, LSLSymbolSubType sub_type, class LSLParamList *function_decl = NULL, class LSLASTNode *var_decl = NULL, class LSLLabel *label_decl = NULL )
       : TrackableObject(ctx), _mName(name), _mType(type), _mSymbolType(symbol_type), _mSubType(sub_type), _mLoc({}), _mFunctionDecl(function_decl), _mVarDecl(var_decl),
-        _mLabelDecl(label_decl), _mConstantValue(NULL), _mReferences(0), _mAssignments(0), _mMangledName(NULL) {};
+        _mLabelDecl(label_decl), _mConstantValue(NULL), _mInitialValue(NULL), _mReferences(0), _mAssignments(0), _mMangledName(NULL) {};
 
     const char          *getName()         { return _mName; }
     class LSLType  *getType()         { return _mType; }
