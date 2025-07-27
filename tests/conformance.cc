@@ -111,6 +111,7 @@ SIMPLE_LINT_TEST_CASE("bugs/typecast_builtin.lsl")
 SIMPLE_LINT_TEST_CASE("tltp/browser.lsl")
 SIMPLE_LINT_TEST_CASE("tltp/exporter.lsl")
 SIMPLE_LINT_TEST_CASE("tltp/server.lsl")
+SIMPLE_LINT_TEST_CASE("bugs/mutable_global_rvalue.lsl")
 
 
 TEST_CASE("type_error_no_assert.lsl") {

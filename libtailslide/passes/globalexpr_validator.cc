@@ -16,8 +16,9 @@ bool GlobalExprValidatingVisitor::visit(LSLGlobalVariable *glob_var) {
   }
   // Worth checking the children specifically to see if there's anything other
   // than non-constness that'd make the rvalue invalid.
-  if (rvalue && _mValidRValue)
+  if (rvalue && _mValidRValue) {
     rvalue->visit(this);
+  }
 
   if (!_mValidRValue) {
     assert(rvalue);

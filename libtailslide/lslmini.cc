@@ -285,6 +285,10 @@ LSLConstant *LSLExpression::getConstantValue() {
 
 LSLConstant *LSLLValueExpression::getConstantValue() {
   if (_mIsFoldable) {
+    if (_mInGlobalContext && !_mConstantValue) {
+      return getSymbol()->getInitialValue();
+    }
+
     // We have to be careful about folding lists
     if (getIType() == LST_LIST) {
       LSLASTNode *top_foldable = this;
@@ -344,6 +348,7 @@ LSLLValueExpression *LSLLValueExpression::clone() {
   new_expr->setIsFoldable(getIsFoldable());
   new_expr->setConstantValue(getConstantValue());
   new_expr->setConstantPrecluded(getConstantPrecluded());
+  new_expr->setInGlobalContext(getInGlobalContext());
   return new_expr;
 }
 

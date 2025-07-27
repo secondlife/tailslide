@@ -726,7 +726,7 @@ class LSLListExpression : public LSLExpression {
 class LSLLValueExpression : public LSLExpression {
   public:
     LSLLValueExpression( ScriptContext *ctx, LSLIdentifier *identifier, LSLIdentifier *member )
-      : LSLExpression(ctx, 2, identifier, member), _mIsFoldable(false) {};
+      : LSLExpression(ctx, 2, identifier, member), _mIsFoldable(false), _mInGlobalContext(false) {};
     NODE_FIELD_GS(LSLIdentifier, Identifier, 0)
     NODE_FIELD_GS(LSLIdentifier, Member, 1)
 
@@ -741,10 +741,13 @@ class LSLLValueExpression : public LSLExpression {
 
     void setIsFoldable(bool foldable) { _mIsFoldable = foldable;};
     bool getIsFoldable() const {return _mIsFoldable;};
+    void setInGlobalContext(bool in_global_context) {_mInGlobalContext = in_global_context;};
+    bool getInGlobalContext() const {return _mInGlobalContext;};
 
     LSLLValueExpression *clone();
   private:
     bool _mIsFoldable;
+    bool _mInGlobalContext;
 };
 
 class LSLScript : public LSLASTNode {

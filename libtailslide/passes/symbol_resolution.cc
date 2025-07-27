@@ -11,7 +11,9 @@ bool SymbolResolutionVisitor::visit(LSLScript *script) {
   // walk over just the global vars and prototypes of functions.
   for (auto *global : *globals) {
     if (global->getNodeType() == NODE_GLOBAL_VARIABLE) {
+      _mInGlobals = true;
       global->visit(this);
+      _mInGlobals = false;
     } else if (global->getNodeType() == NODE_GLOBAL_FUNCTION) {
       // just record the prototype of the function and don't descend for now.
       auto *global_func = (LSLGlobalFunction *)global;
@@ -95,6 +97,7 @@ void SymbolResolutionVisitor::replaceSymbolTable(LSLASTNode *node, LSLSymbolTabl
 }
 
 bool SymbolResolutionVisitor::visit(LSLLValueExpression *lvalue) {
+  lvalue->setInGlobalContext(_mInGlobals);
   lvalue->getIdentifier()->resolveSymbol(SYM_VARIABLE);
   return false;
 }

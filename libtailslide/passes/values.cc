@@ -33,8 +33,15 @@ bool ConstantDeterminingVisitor::visit(LSLScript *script) {
     if (child->getNodeType() == NODE_GLOBAL_VARIABLE)
       child->visit(this);
   }
+
   // safe to descend into functions and event handlers now
-  visitChildren(script);
+  for (auto *child : *script->getGlobals()) {
+    if (child->getNodeType() != NODE_GLOBAL_VARIABLE)
+      child->visit(this);
+  }
+  for (auto *child : *script->getStates()) {
+    child->visit(this);
+  }
   return false;
 }
 
@@ -60,9 +67,11 @@ void ConstantDeterminingVisitor::handleDeclaration(LSLASTNode *decl_node) {
         cv = _mOperationBehavior->cast(sym->getType(), cv, cv->getLoc());
       }
       sym->setConstantValue(cv);
+      sym->setInitialValue(cv);
     }
   } else {
     sym->setConstantValue(sym->getType()->getDefaultValue());
+    sym->setInitialValue(sym->getType()->getDefaultValue());
   }
 }
 
@@ -138,8 +147,9 @@ bool ConstantDeterminingVisitor::visit(LSLLValueExpression *lvalue) {
 
   LSLConstant *constant_value = nullptr;
   DEBUG(LOG_DEBUG_SPAM, nullptr, "id %s assigned %d times\n", symbol->getName(), symbol->getAssignments());
-  if (symbol->getAssignments() == 0) {
+  if (symbol->getAssignments() == 0 || lvalue->getInGlobalContext()) {
     constant_value = symbol->getConstantValue();
+
     if (constant_value != nullptr && member_name != nullptr) { // getting a member_name
       switch (constant_value->getIType()) {
         case LST_VECTOR: {

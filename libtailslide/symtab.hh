@@ -69,6 +69,8 @@ class LSLSymbol: public TrackableObject {
 
     class LSLConstant *getConstantValue()                       { return _mConstantValue;    };
     void               setConstantValue(class LSLConstant *v)   { _mConstantValue = v;       };
+    class LSLConstant *getInitialValue()                       { return _mInitialValue;    };
+    void               setInitialValue(class LSLConstant *v)   { _mInitialValue = v;       };
     bool getConstantPrecluded() const { return _mConstantPrecluded; };
     void setConstantPrecluded(bool precluded) { _mConstantPrecluded = precluded; };
 
@@ -93,6 +95,7 @@ class LSLSymbol: public TrackableObject {
     class LSLASTNode     *_mVarDecl;
     class LSLLabel *_mLabelDecl;
     class LSLConstant *_mConstantValue;
+    class LSLConstant *_mInitialValue;
     bool _mConstantPrecluded = false;
     int                  _mReferences;            // how many times this symbol is referred to
     int                  _mAssignments;           // how many times it is assigned to
