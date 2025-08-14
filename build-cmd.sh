@@ -34,6 +34,7 @@ lib_prefix="lib"
 native_top="${top}"
 native_stage="${stage}"
 native_stage_lib="$stage/lib/release"
+is_windows=0
 
 case "$AUTOBUILD_PLATFORM" in
     windows*)
@@ -43,6 +44,7 @@ case "$AUTOBUILD_PLATFORM" in
         native_top="$(cygpath -m "$top")"
         native_stage="$(cygpath -m "$stage")"
         native_stage_lib="$(cygpath -m "$native_stage_lib")"
+        is_windows=1
     ;;
     linux)
         # "linux" is explicitly 32-bit linux.
@@ -79,8 +81,13 @@ pushd "$TAILSLIDE_SOURCE_DIR"
       CFLAGS="$opts" CXXFLAGS="$opts" \
           cmake "$native_top" -DCMAKE_INSTALL_LIBDIR="$native_stage_lib" -DCMAKE_BUILD_TYPE=Release \
           -DTAILSLIDE_BUILD_TESTS=off -DTAILSLIDE_BUILD_CLI=off -DCMAKE_INSTALL_PREFIX:PATH="${native_stage}"
-      cmake --build . --config Release -- -j2
-      VERBOSE=1 make install
+      if [ "${is_windows}" -eq 1 ]; then
+        cmake --build . --config Release
+        cmake --install . --prefix "$native_stage"
+      else
+        cmake --build . --config Release -- -j2
+        VERBOSE=1 make install
+      fi
       mkdir -p "$stage/lib/release"
       mv "$stage/lib/${lib_prefix}tailslide.$static_lib_ext" "$stage/lib/release/${lib_prefix}tailslide.$static_lib_ext"
     popd
