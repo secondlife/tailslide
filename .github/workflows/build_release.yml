@@ -70,9 +70,19 @@ jobs:
           setup-python: false
           setup-autobuild: false
 
+  windows-package:
+    name: Windows
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v3
+      - uses: secondlife/action-autobuild@v3
+        with:
+          addrsize: 64
+          cygwin-packages: "flex bison"
+
   release:
     name: "Upload autobuild packages to release"
-    needs: "package"
+    needs: ["package", "windows-package"]
     runs-on: "ubuntu-22.04"
     steps:
       - uses: secondlife/action-autobuild-release@v3

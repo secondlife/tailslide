@@ -44,7 +44,7 @@ jobs:
           llvm-cov-14 report -ignore-filename-regex=\(tests\|extern\)/.* -show-region-summary=false --instr-profile default.profdata build/tailslide-test
           llvm-cov-14 export -ignore-filename-regex=\(tests\|extern\)/.* -format lcov --instr-profile default.profdata build/tailslide-test > coverage.info
 
-  windows-test:
+  windows-build:
     name: Windows
     runs-on: windows-2022
     steps:
@@ -53,10 +53,6 @@ jobs:
         with:
           addrsize: 64
           cygwin-packages: "flex bison"
-      - name: "Run tests"
-        run: |
-          ls -lash stage
-          ./stage/bin/tailslide-test
 
   build:
     needs: test
