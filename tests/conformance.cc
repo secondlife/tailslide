@@ -304,6 +304,7 @@ static const char *SIMPLE_SCRIPT_BYTES = "default{state_entry(){}}";
 
 TEST_CASE("Parse script buffer") {
   ParserRef parser(new ScopedScriptParser(nullptr));
+  parser->context.collect_assertions = true;
   auto script = parser->parseLSLBytes(SIMPLE_SCRIPT_BYTES, (int)strlen(SIMPLE_SCRIPT_BYTES));
   CHECK_NE(nullptr, script);
   CHECK_EQ(0, getFilteredMessages(parser).size());

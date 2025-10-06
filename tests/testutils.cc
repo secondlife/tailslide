@@ -52,6 +52,7 @@ ParserRef runConformance(const char *name, bool allow_syntax_errors)
   path += name;
 
   ParserRef parser(new ScopedScriptParser(nullptr));
+  parser->context.collect_assertions = true;
   parser->parseLSLFile(path);
   LSLScript *script = parser->script;
 
