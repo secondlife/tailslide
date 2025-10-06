@@ -82,9 +82,29 @@ jobs:
           cygwin-packages: "flex bison"
           build-variables-ref: master
 
+  macos-package:
+    name: Mac Package
+    runs-on: macos-13
+    continue-on-error: false
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Install Mac Dependencies
+        if: ${{ matrix.os == 'macos-13' }}
+        shell: bash
+        run: |
+          bash bootstrap_macos.sh
+
+      - uses: secondlife/action-autobuild@v5
+        with:
+          addrsize: 64
+          build-variables-ref: master
+
+
   release:
     name: "Upload autobuild packages to release"
-    needs: ["package", "windows-package"]
+    needs: ["package", "windows-package", "macos-package"]
     runs-on: "ubuntu-22.04"
     steps:
       - uses: secondlife/action-autobuild-release@v3
