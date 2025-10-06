@@ -255,6 +255,7 @@ void SymbolResolutionVisitor::resolvePendingJumps(LSLASTNode *func_like) {
     }
   }
 
+  bool has_duplicate_labels = false;
   if (_mLindenJumpSemantics) {
     // Walk the list of collected labels and warn on any duplicated names
     std::set<std::string> label_names;
@@ -262,6 +263,7 @@ void SymbolResolutionVisitor::resolvePendingJumps(LSLASTNode *func_like) {
       auto *label_id = label->getIdentifier();
       if (label_names.find(label_id->getName()) != label_names.end()) {
         NODE_ERROR(label_id, W_DUPLICATE_LABEL_NAME, label_id->getName());
+        has_duplicate_labels = true;
       } else {
         label_names.insert(label_id->getName());
       }
@@ -280,69 +282,73 @@ void SymbolResolutionVisitor::resolvePendingJumps(LSLASTNode *func_like) {
   //  so something like `while(1){if(something){jump foo; 1; @foo;}}` is still considered to be continue-like.
   //  while something like `while(1){jump foo; 1; @foo; {}}`
   //  or `while(1){if(something){jump foo; 1; @foo;}else{}}` is not.
-  bool has_unstructured_jumps = false;
-  for (auto jump : _mPendingJumps) {
-    auto *sym = jump->getSymbol();
-    if (!sym)
-      continue;
-    auto *label = sym->getLabelDecl();
-    if (!label) {
-      has_unstructured_jumps = true;
-      continue;
-    }
-
-    LSLASTNode *jump_loop = _mEnclosingLoops[jump];
-
-    // if the jump didn't happen in a loop then there's no chance of it being a structured jump.
-    if (!jump_loop) {
-      has_unstructured_jumps = true;
-      continue;
-    }
-
-    // If enclosing loop for the jump has an immediate follower, and it's the target label,
-    // then this jump is break-like. This plays nicely with multiple following labels.
-    LSLASTNode *jump_loop_follower = jump_loop->getNext();
-    bool label_follows_loop = false;
-    while (jump_loop_follower && jump_loop_follower->getNodeSubType() == NODE_LABEL) {
-      if (jump_loop_follower == label) {
-        jump->setIsBreakLike(true);
-        label_follows_loop = true;
-        break;
+  // If there are duplicate labels (only really possible with linden semantics),
+  // we can't reliably determine structured jumps, so treat as unstructured.
+  bool has_unstructured_jumps = has_duplicate_labels;
+  if (!has_duplicate_labels) {
+    for (auto jump : _mPendingJumps) {
+      auto *sym = jump->getSymbol();
+      if (!sym)
+        continue;
+      auto *label = sym->getLabelDecl();
+      if (!label) {
+        has_unstructured_jumps = true;
+        continue;
       }
-      jump_loop_follower = jump_loop_follower->getNext();
-    }
-    if (label_follows_loop)
-      continue;
 
-    LSLASTNode *label_loop = _mEnclosingLoops[label];
-    // no chance of this being the last statement in jump's enclosing loop, so can't be break-like.
-    if (!label_loop || label_loop != jump_loop) {
-      has_unstructured_jumps = true;
-      continue;
-    }
+      LSLASTNode *jump_loop = _mEnclosingLoops[jump];
 
-    bool label_is_last = true;
-    LSLASTNode *cur_node = label;
+      // if the jump didn't happen in a loop then there's no chance of it being a structured jump.
+      if (!jump_loop) {
+        has_unstructured_jumps = true;
+        continue;
+      }
 
-    // walk up until we hit the enclosing loop
-    while (cur_node != label_loop) {
-      // specifically doesn't check the enclosing statement!
-      auto *cur_child = cur_node;
-      while((cur_child = cur_child->getNext())) {
-        // If a non-label statement follows then the label can't be the last statement
-        // within the loop. Allows for things like empty `else` branches with null nodes.
-        if (cur_child->getNodeType() == NODE_STATEMENT && cur_node->getNodeSubType() != NODE_LABEL) {
-          label_is_last = false;
+      // If enclosing loop for the jump has an immediate follower, and it's the target label,
+      // then this jump is break-like. This plays nicely with multiple following labels.
+      LSLASTNode *jump_loop_follower = jump_loop->getNext();
+      bool label_follows_loop = false;
+      while (jump_loop_follower && jump_loop_follower->getNodeSubType() == NODE_LABEL) {
+        if (jump_loop_follower == label) {
+          jump->setIsBreakLike(true);
+          label_follows_loop = true;
           break;
         }
+        jump_loop_follower = jump_loop_follower->getNext();
       }
+      if (label_follows_loop)
+        continue;
+
+      LSLASTNode *label_loop = _mEnclosingLoops[label];
+      // no chance of this being the last statement in jump's enclosing loop, so can't be break-like.
+      if (!label_loop || label_loop != jump_loop) {
+        has_unstructured_jumps = true;
+        continue;
+      }
+
+      bool label_is_last = true;
+      LSLASTNode *cur_node = label;
+
+      // walk up until we hit the enclosing loop
+      while (cur_node != label_loop) {
+        // specifically doesn't check the enclosing statement!
+        auto *cur_child = cur_node;
+        while((cur_child = cur_child->getNext())) {
+          // If a non-label statement follows then the label can't be the last statement
+          // within the loop. Allows for things like empty `else` branches with null nodes.
+          if (cur_child->getNodeType() == NODE_STATEMENT && cur_child->getNodeSubType() != NODE_LABEL) {
+            label_is_last = false;
+            break;
+          }
+        }
+        if (!label_is_last)
+          break;
+        cur_node = cur_node->getParent();
+      }
+      jump->setIsContinueLike(label_is_last);
       if (!label_is_last)
-        break;
-      cur_node = cur_node->getParent();
+        has_unstructured_jumps = true;
     }
-    jump->setIsContinueLike(label_is_last);
-    if (!label_is_last)
-      has_unstructured_jumps = true;
   }
 
   if (auto *func_sym = func_like->getSymbol()) {

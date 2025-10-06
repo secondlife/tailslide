@@ -340,4 +340,56 @@ TEST_CASE("LogMessage toString() and getMessage()") {
   CHECK_EQ(error_msg->toString(), "ERROR:: (  5,  9): [E10001] Duplicate declaration of `a'; previously declared at (3, 9).");
 }
 
+static std::map<std::string, LSLSymbol*> getFunctionSymbols(LSLScript *script) {
+  std::map<std::string, LSLSymbol*> functions;
+  auto *globals = script->getGlobals();
+  for (auto *global : *globals) {
+    if (global->getNodeType() == NODE_GLOBAL_FUNCTION) {
+      auto *func = (LSLGlobalFunction *)global;
+      auto *id = func->getIdentifier();
+      if (id) {
+        auto *sym = id->getSymbol();
+        if (sym) {
+          functions[id->getName()] = sym;
+        }
+      }
+    }
+  }
+  return functions;
+}
+
+static void checkJumpAnnotations(
+    const std::map<std::string, LSLSymbol*>& functions,
+    const char* name,
+    bool expectedHasJumps,
+    bool expectedHasUnstructured) {
+  REQUIRE(functions.count(name));
+  auto *sym = functions.at(name);
+  CHECK_EQ(sym->getHasJumps(), expectedHasJumps);
+  CHECK_EQ(sym->getHasUnstructuredJumps(), expectedHasUnstructured);
+}
+
+TEST_CASE("jump_annotations.lsl") {
+  auto parser = runConformance("jump_annotations.lsl");
+  assertNoLintErrors(parser, "jump_annotations.lsl");
+
+  auto *script = parser->script;
+  REQUIRE(script != nullptr);
+
+  auto functions = getFunctionSymbols(script);
+
+  // Functions with no jumps
+  checkJumpAnnotations(functions, "no_jumps", false, false);
+
+  // Structured jumps (break-like and continue-like)
+  checkJumpAnnotations(functions, "break_like", true, false);
+  checkJumpAnnotations(functions, "continue_like", true, false);
+
+  // Unstructured jumps
+  checkJumpAnnotations(functions, "unstructured_no_loop", true, true);
+  checkJumpAnnotations(functions, "unstructured_forward", true, true);
+  checkJumpAnnotations(functions, "unstructured_nested", true, true);
+  checkJumpAnnotations(functions, "duplicate_labels", true, true);
+}
+
 TEST_SUITE_END();
