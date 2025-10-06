@@ -1,6 +1,6 @@
 # Intro
 
-![Build Status](https://github.com/SaladDais/tailslide/workflows/build/badge.svg) [![codecov](https://codecov.io/gh/SaladDais/tailslide/branch/master/graph/badge.svg?token=5BQCSA63F1)](https://codecov.io/gh/SaladDais/tailslide)
+![Build Status](https://github.com/secondlife/tailslide/workflows/build/badge.svg) [![codecov](https://codecov.io/gh/secondlife/tailslide/branch/master/graph/badge.svg?token=5BQCSA63F1)](https://codecov.io/gh/secondlife/tailslide)
 
 
 Tailslide provides an embeddable parser, AST representation, and tree walker library for
@@ -10,7 +10,7 @@ LSL compiler or developing a superset of LSL.
 A reference [byte-perfect LSO compiler](libtailslide/passes/lso)
 and semantically equivalent [CIL compiler](libtailslide/passes/mono) are provided. Semantic
 conformity with the output of LL's compilers is proven through
-[extensive testcases](https://github.com/SaladDais/tailslide/tree/master/tests/scripts) and a
+[extensive testcases](https://github.com/secondlife/tailslide/tree/master/tests/scripts) and a
 [fuzzer](https://github.com/SaladDais/lscript-tailslide#lscript_fuzzer).
 
 Also provided is a CLI utility to quickly lint or optimize LSL scripts,
