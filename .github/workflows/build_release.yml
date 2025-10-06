@@ -64,11 +64,12 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - uses: secondlife/action-autobuild@v3
+      - uses: secondlife/action-autobuild@v5
         with:
           addrsize: ${{ matrix.addrsize }}
           setup-python: false
           setup-autobuild: false
+          build-variables-ref: master
 
   windows-package:
     name: Windows
@@ -79,6 +80,7 @@ jobs:
         with:
           addrsize: 64
           cygwin-packages: "flex bison"
+          build-variables-ref: master
 
   release:
     name: "Upload autobuild packages to release"

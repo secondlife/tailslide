@@ -53,6 +53,7 @@ jobs:
         with:
           addrsize: 64
           cygwin-packages: "flex bison"
+          build-variables-ref: master
 
   build:
     needs: test
@@ -114,3 +115,4 @@ jobs:
           addrsize: ${{ matrix.addrsize }}
           setup-python: false
           setup-autobuild: false
+          build-variables-ref: master
