@@ -171,6 +171,16 @@ ADD_FLEX_BISON_DEPENDENCY(LSLMiniScanner LSLMiniParser)
 target_include_directories(libtailslide PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(libtailslide PUBLIC libtailslide)
 target_sources(libtailslide PRIVATE ${FLEX_LSLMiniScanner_OUTPUTS} ${BISON_LSLMiniParser_OUTPUTS})
+
+# Suppress warning about unused yynerrs variable in Bison-generated code
+if (NOT MSVC)
+  set_source_files_properties(
+    ${CMAKE_CURRENT_BINARY_DIR}/lslmini.tab.cc
+    PROPERTIES
+    COMPILE_FLAGS "-Wno-unused-but-set-variable"
+  )
+endif()
+
 set_target_properties(libtailslide PROPERTIES OUTPUT_NAME tailslide)
 if (NOT WIN32 AND NOT TAILSLIDE_FUZZER_INSTRUMENTATION)
   add_definitions("-fPIC")
