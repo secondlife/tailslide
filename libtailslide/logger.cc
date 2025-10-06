@@ -1,20 +1,17 @@
 #include <cstdarg>
 #include <vector>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
 #include "logger.hh"
 #include "lslmini.hh"
 
 namespace Tailslide {
 
-#define LOG_BUF_LEFT (1024 - (bp - buf))
-
 void Logger::reset() {
   _mMessages.clear();
-  _mAssertions.clear();
   _mErrors = 0;
   _mWarnings = 0;
-  _mFinalized = false;
-  _mCheckAssertions = false;
 }
 
 void Logger::log(LogLevel level, YYLTYPE *yylloc, const char *fmt, ...) {
@@ -25,86 +22,65 @@ void Logger::log(LogLevel level, YYLTYPE *yylloc, const char *fmt, ...) {
 }
 
 void Logger::error(YYLTYPE *yylloc, int error, ...) {
-  // FIXME: magic numbers
   char buf[1025] = {0};
-  char *bp = buf;
+  std::ostringstream oss;
   const char *fmt;
-  const char *fp;
   LogLevel level = (error < W_WARNING) ? LOG_ERROR : LOG_WARN;
   va_list args;
 
-  // pick out the format string to tack onto the end of the message
+  // pick out the format string for the error message
   if (level == LOG_ERROR) {
     fmt = _sErrorMessages[(int) (error - E_ERROR)];
   } else {
     fmt = _sWarningMessages[(int) (error - W_WARNING)];
   }
 
-  if (_mCheckAssertions) {
-    // if we're checking assertions, messages will be removed by matching assertions,
-    // so we just add "Unexpected" to all of them.
-    bp += snprintf(bp, LOG_BUF_LEFT, level == LOG_ERROR ? "Unexpected error: " : "Unexpected warning: ");
-
-    // upgrade everything to error
-    level = LOG_ERROR;
-  }
-
-  if (_mShowErrorCodes) {
-    bp += snprintf(bp, LOG_BUF_LEFT, "[E%d] ", (int) error);
-  }
-
-  // copy the format string for the error itself to the end
-  for (fp = fmt; *fp && LOG_BUF_LEFT; ++fp) {
-    *bp++ = *fp;
-  }
-
+  // Format the actual error message
   va_start(args, error);
-  logv(level, yylloc, buf, args, error);
+  vsnprintf(buf, sizeof(buf), fmt, args);
   va_end(args);
+
+  oss << buf;
+
+  // Update error/warning counts
+  if (level == LOG_ERROR) {
+    ++_mErrors;
+  } else {
+    ++_mWarnings;
+  }
+
+  std::string message = oss.str();
+  _mMessages.push_back(createMessage(level, yylloc, message, (ErrorCode) error));
 }
 
 
 void Logger::logv(LogLevel level, YYLTYPE *yylloc, const char *fmt, va_list args, int error) {
-  const char *type = nullptr;
-  char buf[1025] = {0};
-  char *bp = buf;
   switch (level) {
     case LOG_ERROR:
-      type = "ERROR";
       ++_mErrors;
       break;
     case LOG_WARN:
-      type = "WARN";
       ++_mWarnings;
       break;
     case LOG_INFO:
       if (!_mShowInfo) return;
-      type = "INFO";
       break;
     case LOG_DEBUG:
     case LOG_DEBUG_MINOR:
     case LOG_DEBUG_SPAM:
 #ifdef DEBUG_LEVEL
       if ( DEBUG_LEVEL < level ) return;
-      type = "DEBUG";
 #else /* not DEBUG_LEVEL */
       return;
 #endif /* not DEBUG_LEVEL */
       break;
     default:
-      type = "OTHER";
       break;
   }
 
-  bp += snprintf(bp, LOG_BUF_LEFT, "%5s:: ", type);
-  if (yylloc != nullptr) {
-    bp += snprintf(bp, LOG_BUF_LEFT, "(%3d,%3d)", yylloc->first_line, yylloc->first_column);
-    if (_mShowEnd)
-      bp += snprintf(bp, LOG_BUF_LEFT, "-(%3d,%3d)", yylloc->last_line, yylloc->last_column);
-    bp += snprintf(bp, LOG_BUF_LEFT, ": ");
-  }
-  bp += vsnprintf(bp, LOG_BUF_LEFT, fmt, args);
-  _mMessages.push_back(_mAllocator->newTracked<LogMessage>(level, yylloc, buf, (ErrorCode) error));
+  char buf[1025] = {0};
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  _mMessages.push_back(createMessage(level, yylloc, buf, (ErrorCode) error));
 }
 
 struct LogMessageSort {
@@ -126,45 +102,19 @@ struct LogMessageSort {
     }
 };
 
-void Logger::filterAssertErrors() {
-  std::vector<std::pair<int, ErrorCode>>::iterator ai;
-  std::vector<std::pair<int, ErrorCode>> failed_asserts;
-  for (ai = _mAssertions.begin(); ai != _mAssertions.end(); ++ai) {
-    bool suppressed_by_assert = false;
-    for (auto i = _mMessages.begin(); i != _mMessages.end(); ++i) {
-      if ((ai)->first == (*i)->getLoc()->first_line && (ai)->second == (*i)->getError()) {
-        --_mErrors; // when check assertions, warnings are treated as errors.
-        _mMessages.erase(i);
-        suppressed_by_assert = true;
-        break;
-      }
-    }
-    if (!suppressed_by_assert)
-      failed_asserts.push_back(*ai);
-  }
-  for (auto failed_assert : failed_asserts) {
-      log(LOG_ERROR, nullptr, "Assertion failed: error %d on line %d.", failed_assert.second, failed_assert.first);
-  }
-}
-
-void Logger::finalize() {
-  if (_mFinalized)
-    return;
-  _mFinalized = true;
-  if (_mCheckAssertions)
-    filterAssertErrors();
-}
-
 void Logger::printReport() {
-  finalize();
   if (_mSort)
     std::sort(_mMessages.begin(), _mMessages.end(), LogMessageSort());
 
   std::vector<LogMessage *>::iterator i;
   for (i = _mMessages.begin(); i != _mMessages.end(); ++i)
-    fprintf(stderr, "%s\n", (*i)->getMessage().c_str());
+    fprintf(stderr, "%s\n", (*i)->toString().c_str());
 
   fprintf(stderr, "TOTAL:: Errors: %d  Warnings: %d\n", _mErrors, _mWarnings);
+}
+
+LogMessage* Logger::createMessage(LogLevel type, YYLTYPE *loc, const std::string &message, ErrorCode error) {
+  return _mAllocator->newTracked<LogMessage>(type, loc, message.c_str(), error);
 }
 
 LogMessage::LogMessage(ScriptContext *ctx, LogLevel type, YYLTYPE *loc, const char *message, ErrorCode error)
@@ -172,6 +122,46 @@ LogMessage::LogMessage(ScriptContext *ctx, LogLevel type, YYLTYPE *loc, const ch
   if (loc) _mLoc = *loc;
   assert (message != nullptr);
   _mMessage = message;
+}
+
+std::string LogMessage::toString() const {
+  std::ostringstream oss;
+
+  const char *type = nullptr;
+  switch (_mLogType) {
+    case LOG_ERROR:
+      type = "ERROR";
+      break;
+    case LOG_WARN:
+      type = "WARN";
+      break;
+    case LOG_INFO:
+      type = "INFO";
+      break;
+    case LOG_DEBUG:
+    case LOG_DEBUG_MINOR:
+    case LOG_DEBUG_SPAM:
+      type = "DEBUG";
+      break;
+    default:
+      type = "OTHER";
+      break;
+  }
+
+  oss << std::setw(5) << type << ":: ";
+
+  if (_mLoc.first_line > 0 || _mLoc.first_column > 0) {
+    oss << "(" << std::setw(3) << _mLoc.first_line << ","
+        << std::setw(3) << _mLoc.first_column << "): ";
+  }
+
+  if (_mErrorCode != 0) {
+    oss << "[E" << _mErrorCode << "] ";
+  }
+
+  oss << _mMessage;
+
+  return oss.str();
 }
 
 

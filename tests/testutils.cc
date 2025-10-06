@@ -4,6 +4,46 @@
 
 using namespace Tailslide;
 
+std::vector<LogMessage*> getFilteredMessages(const ParserRef &parser) {
+  Logger *logger = &parser->logger;
+  // Take a copy of the assertions we saw during script parsing
+  std::vector<std::pair<int, ErrorCode>> remaining_assertions = parser->context.assertions;
+  std::vector<LogMessage*> filtered_messages;
+
+  // Check each message against assertions and collect non-suppressed ones
+  for (auto msg : logger->getMessages()) {
+    bool suppressed = false;
+    // Crucially, we don't keep this iterator around.
+    for (auto ai = remaining_assertions.begin(); ai != remaining_assertions.end(); ++ai) {
+      if (ai->first == msg->getLoc()->first_line && ai->second == msg->getError()) {
+        suppressed = true;
+        remaining_assertions.erase(ai);
+        break;
+      }
+    }
+    if (!suppressed) {
+      filtered_messages.push_back(msg);
+    }
+  }
+
+  // Add failed assertions as synthetic error messages
+  for (auto &failed_assert : remaining_assertions) {
+    YYLTYPE loc = {failed_assert.first, 1, failed_assert.first, 1};
+    char msg_buf[100];
+    snprintf(msg_buf, sizeof(msg_buf), "Assertion failed: expected error %d", failed_assert.second);
+    auto *synthetic_msg = logger->createMessage(LOG_ERROR, &loc, msg_buf, E_ERROR);
+    filtered_messages.push_back(synthetic_msg);
+  }
+
+  return filtered_messages;
+}
+
+static void printLogMessages(const std::vector<LogMessage*> &messages) {
+  for (auto msg : messages) {
+    fprintf(stderr, "%s\n", msg->toString().c_str());
+  }
+}
+
 ParserRef runConformance(const char *name, bool allow_syntax_errors)
 {
   std::string path = __FILE__;
@@ -12,8 +52,6 @@ ParserRef runConformance(const char *name, bool allow_syntax_errors)
   path += name;
 
   ParserRef parser(new ScopedScriptParser(nullptr));
-  Logger *logger = &parser->logger;
-  logger->setCheckAssertions(true);
   parser->parseLSLFile(path);
   LSLScript *script = parser->script;
 
@@ -21,7 +59,7 @@ ParserRef runConformance(const char *name, bool allow_syntax_errors)
   {
     if (!allow_syntax_errors) {
       std::string message = "script " + path + " completely failed to parse!";
-      logger->printReport();
+      printLogMessages(getFilteredMessages(parser));
       FAIL(message);
     }
   } else {
@@ -37,12 +75,12 @@ ParserRef runConformance(const char *name, bool allow_syntax_errors)
   return parser;
 }
 
-void assertNoLintErrors(Logger *logger, const std::string& name) {
-  logger->finalize();
-  int num_errors = logger->getErrors();
-  if (num_errors) {
-    logger->printReport();
-    std::string message = "script " + name + " encountered " + std::to_string(num_errors) + " errors during parse!";
+void assertNoLintErrors(const ParserRef &parser, const std::string& name) {
+  auto filtered = getFilteredMessages(parser);
+
+  if (!filtered.empty()) {
+    printLogMessages(filtered);
+    std::string message = "script " + name + " encountered " + std::to_string(filtered.size()) + " errors during parse!";
     FAIL(message);
   }
 }
@@ -104,10 +142,11 @@ static void checkStringOutput(
 ) {
   ParserRef parser = runConformance(name);
   Logger *logger = &parser->logger;
-  logger->finalize();
-  CHECK(logger->getErrors() == 0);
-  if (logger->getErrors()) {
-    logger->printReport();
+
+  auto filtered = getFilteredMessages(parser);
+  CHECK(filtered.empty());
+  if (!filtered.empty()) {
+    printLogMessages(filtered);
     // If there are errors at this stage then the AST isn't even guaranteed to be sane.
     return;
   }

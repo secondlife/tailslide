@@ -47,6 +47,7 @@ struct ScriptContext {
   bool parsing = false;
   Tailslide::TailslideLType glloc {0};
   void *scanner = nullptr;
+  std::vector<std::pair<int, ErrorCode>> assertions;
 };
 
 struct Vector3 {

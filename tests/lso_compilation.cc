@@ -120,8 +120,7 @@ TEST_CASE("Stack-Heap Collision") {
   auto script = runConformance("stack_heap_collide.lsl");
   LSOScriptCompiler visitor(&script->allocator);
   script->script->visit(&visitor);
-  script->logger.finalize();
-  CHECK_FALSE(script->logger.getErrors());
+  CHECK(getFilteredMessages(script).empty());
 }
 
 TEST_SUITE_END();

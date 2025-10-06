@@ -51,7 +51,6 @@ int main(int argc, char **argv) {
       ("prune-funcs", "Prune unused functions")
       ("lint", "Only lint the file for errors, don't optimize or pretty print.")
       ("show-tree", "Show the AST after optimizations")
-      ("check-asserts", "check assert comments and suppress errors based on matches")
   ;
 
   options.add_options("Compilation")
@@ -94,7 +93,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  bool check_assertions = vm.count("check-asserts");
   if (vm.count("show-tree"))
     show_tree = true;
   if (vm.count("lint")) {
@@ -143,9 +141,6 @@ int main(int argc, char **argv) {
   Logger *logger = &parser.logger;
   bool mono_semantics = !vm.count("lso-compile");
 
-  if (check_assertions)
-    logger->setCheckAssertions(true);
-
   auto script = parser.parseLSLFile(yyin);
   if (yyin != nullptr)
     fclose(yyin);
@@ -157,10 +152,6 @@ int main(int argc, char **argv) {
     script->propagateValues();
     script->finalPass();
 
-    if (check_assertions) {
-      logger->filterAssertErrors();
-      logger->setCheckAssertions(false);
-    }
     // Don't try to optimize if we have a possibly broken tree
     if (!logger->getErrors()) {
       script->optimize(optim_ctx);

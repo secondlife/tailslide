@@ -10,7 +10,7 @@ TEST_SUITE_BEGIN("Lint");
 TEST_CASE("bad_globals.lsl") {
   auto parser = runConformance("bad_globals.lsl", true);
   // syntax error due to bad tokens
-  CHECK(parser->logger.getErrors() == 2);
+  CHECK(getFilteredMessages(parser).size() == 2);
 }
 SIMPLE_LINT_TEST_CASE("camera_demo.lsl")
 SIMPLE_LINT_TEST_CASE("check_all_return.lsl")
@@ -47,14 +47,14 @@ SIMPLE_LINT_TEST_CASE("parserstackdepth2.lsl")
 TEST_CASE("parserstackdepth3.lsl") {
   auto parser = runConformance("parserstackdepth3.lsl", true);
   CHECK(parser->script == nullptr);
-  // error about stack depth, then syntax error due to unexpected end.
-  CHECK(parser->logger.getErrors() == 2);
+  // parser stack depth error, then syntax error due to unexpected end.
+  CHECK(getFilteredMessages(parser).size() == 2);
 }
 SIMPLE_LINT_TEST_CASE("print_expression.lsl")
 TEST_CASE("print_no_shadowing.lsl") {
   auto parser = runConformance("print_no_shadowing.lsl", true);
   // syntax error due to unexpected keyword
-  CHECK(parser->logger.getErrors() == 2);
+  CHECK(getFilteredMessages(parser).size() == 2);
 }
 SIMPLE_LINT_TEST_CASE("pathological_expression.lsl")
 SIMPLE_LINT_TEST_CASE("print_type_bug.lsl")
@@ -68,8 +68,7 @@ TEST_CASE("strict_salist.lsl") {
   auto parser = runConformance("strict_salist.lsl");
   // assert should be satisfied by validating globals with LSO semantics
   parser->script->validateGlobals(false);
-  parser->logger.finalize();
-  CHECK(parser->logger.getErrors() == 0);
+  CHECK(getFilteredMessages(parser).size() == 0);
 }
 SIMPLE_LINT_TEST_CASE("lenient_salist.lsl")
 SIMPLE_LINT_TEST_CASE("test1.lsl")
@@ -116,9 +115,7 @@ SIMPLE_LINT_TEST_CASE("bugs/mutable_global_rvalue.lsl")
 
 TEST_CASE("type_error_no_assert.lsl") {
   auto parser = runConformance("type_error_no_assert.lsl");
-  parser->logger.setCheckAssertions(false);
-  parser->logger.finalize();
-  CHECK(parser->logger.getErrors() == 1);
+  CHECK(getFilteredMessages(parser).size() == 1);
 }
 
 TEST_SUITE_END();
@@ -309,7 +306,37 @@ TEST_CASE("Parse script buffer") {
   ParserRef parser(new ScopedScriptParser(nullptr));
   auto script = parser->parseLSLBytes(SIMPLE_SCRIPT_BYTES, (int)strlen(SIMPLE_SCRIPT_BYTES));
   CHECK_NE(nullptr, script);
-  CHECK_EQ(0, parser->logger.getErrors());
+  CHECK_EQ(0, getFilteredMessages(parser).size());
+}
+
+TEST_CASE("LogMessage toString() and getMessage()") {
+  auto parser = runConformance("logmessage_test.lsl");
+  auto messages = parser->logger.getMessages();
+
+  // Should have exactly 2 messages: 1 warning, 1 error
+  CHECK_EQ(messages.size(), 2);
+
+  LogMessage *warning_msg = nullptr;
+  LogMessage *error_msg = nullptr;
+
+  for (auto msg : messages) {
+    if (msg->getType() == LOG_WARN) {
+      warning_msg = msg;
+    } else if (msg->getType() == LOG_ERROR) {
+      error_msg = msg;
+    }
+  }
+
+  REQUIRE(warning_msg != nullptr);
+  REQUIRE(error_msg != nullptr);
+
+  // Test warning message
+  CHECK_EQ(warning_msg->getMessage(), "Suggest parentheses around assignment used as truth value.");
+  CHECK_EQ(warning_msg->toString(), " WARN:: (  4, 13): [E20002] Suggest parentheses around assignment used as truth value.");
+
+  // Test error message
+  CHECK_EQ(error_msg->getMessage(), "Duplicate declaration of `a'; previously declared at (3, 9).");
+  CHECK_EQ(error_msg->toString(), "ERROR:: (  5,  9): [E10001] Duplicate declaration of `a'; previously declared at (3, 9).");
 }
 
 TEST_SUITE_END();

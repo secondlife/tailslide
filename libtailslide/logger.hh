@@ -101,28 +101,22 @@ class Logger {
   public:
     explicit Logger(ScriptAllocator *allocator) :
         _mErrors(0), _mWarnings(0), _mShowEnd(false), _mShowInfo(false), _mSort(true),
-        _mShowErrorCodes(true), _mCheckAssertions(false),
-        _mFinalized(false), _mAllocator(allocator) {};
+        _mAllocator(allocator) {};
     void log(LogLevel type, YYLTYPE *loc, const char *fmt, ...);
     void logv(LogLevel type, YYLTYPE *loc, const char *fmt, va_list args, int error=0);
     void error( YYLTYPE *loc, int error, ... );
     void printReport();
     void reset();
-    void finalize();
 
     const std::vector<class LogMessage*> & getMessages() const { return _mMessages; };
     int     getErrors() const    { return _mErrors;    }
-    int     getWarnings()  { finalize(); return _mWarnings;  }
+    int     getWarnings() const  { return _mWarnings;  }
     void    setShowEnd(bool v) { _mShowEnd = v; }
     void    setShowInfo(bool v){ _mShowInfo = v;}
     void    setSort(bool v)     { _mSort = v;     }
-    void    setShowErrorCodes(bool v) { _mShowErrorCodes = v; }
-    void    setCheckAssertions(bool v) { _mCheckAssertions = v; }
-    void    filterAssertErrors();
 
-    void    addAssertion(int line, ErrorCode error ) {
-      _mAssertions.emplace_back(std::pair<int, ErrorCode>(line, error ) );
-    }
+    // Create a LogMessage without adding it to the internal message list
+    LogMessage* createMessage(LogLevel type, YYLTYPE *loc, const std::string &message, ErrorCode error);
 
   protected:
     int     _mErrors;
@@ -130,14 +124,9 @@ class Logger {
     bool    _mShowEnd;
     bool    _mShowInfo;
     bool    _mSort;
-    bool    _mShowErrorCodes;
-    bool    _mCheckAssertions;
-    bool    _mFinalized;
     ScriptAllocator *_mAllocator;
 
     std::vector<class LogMessage*>    _mMessages;
-    std::vector<ErrorCode>            _mErrorsSeen;
-    std::vector<std::pair<int, ErrorCode>>    _mAssertions;
     static const char *_sErrorMessages[];
     static const char *_sWarningMessages[];
 };
@@ -159,6 +148,7 @@ class LogMessage: public TrackableObject {
     YYLTYPE    *getLoc()  { return &_mLoc;  }
     ErrorCode   getError() { return _mErrorCode; }
     const std::string &getMessage() { return _mMessage; }
+    std::string toString() const;
 
   private:
     LogLevel            _mLogType;
