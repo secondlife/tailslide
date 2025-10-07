@@ -8,6 +8,25 @@
 
 namespace Tailslide {
 
+struct LogMessageSort {
+  bool operator()(LogMessage *const &left, LogMessage *const &right) {
+    if (left->getType() < right->getType())
+      return true;
+    else if (left->getType() > right->getType())
+      return false;
+
+    if (left->getLoc()->first_line < right->getLoc()->first_line)
+      return true;
+    else if (left->getLoc()->first_line > right->getLoc()->first_line)
+      return false;
+
+    if (left->getLoc()->first_column < right->getLoc()->first_column)
+      return true;
+
+    return false;
+  }
+};
+
 void Logger::reset() {
   _mMessages.clear();
   _mErrors = 0;
@@ -51,6 +70,8 @@ void Logger::error(YYLTYPE *yylloc, int error, ...) {
 
   std::string message = oss.str();
   _mMessages.push_back(createMessage(level, yylloc, message, (ErrorCode) error));
+  if (_mSort)
+    std::sort(_mMessages.begin(), _mMessages.end(), LogMessageSort());
 }
 
 
@@ -81,31 +102,11 @@ void Logger::logv(LogLevel level, YYLTYPE *yylloc, const char *fmt, va_list args
   char buf[1025] = {0};
   vsnprintf(buf, sizeof(buf), fmt, args);
   _mMessages.push_back(createMessage(level, yylloc, buf, (ErrorCode) error));
-}
-
-struct LogMessageSort {
-    bool operator()(LogMessage *const &left, LogMessage *const &right) {
-      if (left->getType() < right->getType())
-        return true;
-      else if (left->getType() > right->getType())
-        return false;
-
-      if (left->getLoc()->first_line < right->getLoc()->first_line)
-        return true;
-      else if (left->getLoc()->first_line > right->getLoc()->first_line)
-        return false;
-
-      if (left->getLoc()->first_column < right->getLoc()->first_column)
-        return true;
-
-      return false;
-    }
-};
-
-void Logger::printReport() {
   if (_mSort)
     std::sort(_mMessages.begin(), _mMessages.end(), LogMessageSort());
+}
 
+void Logger::printReport() {
   std::vector<LogMessage *>::iterator i;
   for (i = _mMessages.begin(); i != _mMessages.end(); ++i)
     fprintf(stderr, "%s\n", (*i)->toString().c_str());
