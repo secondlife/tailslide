@@ -657,10 +657,13 @@ LSLConstant *TailslideOperationBehavior::cast(LSLType *to_type, LSLFloatConstant
     case LST_INTEGER: {
       int32_t new_val;
       if (std::isfinite(v)) {
-        new_val = (int32_t)v;
+        // We cast to int64 first to fix AArch64 behavior.
+        // Yes, we intentionally cast away the extra precision first,
+        // this is how LSL-on-Mono works.
+        new_val = (int32_t)((int64_t)((float)v));
       } else {
         // this is the result for -Inf +Inf and NaN
-        new_val = 0xFFffFFff;
+        new_val = INT32_MIN;
       }
       return _mAllocator->newTracked<LSLIntegerConstant>(new_val);
     }
