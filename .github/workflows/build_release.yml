@@ -84,7 +84,7 @@ jobs:
 
   macos-package:
     name: Mac Package
-    runs-on: macos-13
+    runs-on: macos-15
     continue-on-error: false
     steps:
 
