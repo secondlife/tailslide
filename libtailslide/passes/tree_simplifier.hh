@@ -16,7 +16,7 @@ struct OptimizationOptions {
     }
 };
 
-class TreeSimplifyingVisitor: public ASTVisitor {
+class TreeSimplifyingVisitor: public DepthFirstASTVisitor {
   public:
     explicit TreeSimplifyingVisitor(const OptimizationOptions &opts): mOpts(opts) {};
     OptimizationOptions mOpts;
