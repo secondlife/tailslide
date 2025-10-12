@@ -45,8 +45,10 @@ class LSLSymbol: public TrackableObject {
 
     int                  getReferences() const   { return _mReferences; }
     int                  addReference()    { return ++_mReferences; }
+    void                 removeReference() { if (_mReferences > 0) --_mReferences; }
     int                  getAssignments() const  { return _mAssignments; }
     int                  addAssignment()   { return ++_mAssignments; }
+    void                 removeAssignment() { if (_mAssignments > 0) --_mAssignments; }
     void                 resetTracking()   { _mAssignments = 0; _mReferences = 0; }
 
     LSLSymbolType         getSymbolType()  { return _mSymbolType; }

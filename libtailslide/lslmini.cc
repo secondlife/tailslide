@@ -231,16 +231,10 @@ void LSLScript::recalculateReferenceData() {
 
 void LSLScript::optimize(const OptimizationOptions &ctx) {
   int optimized;
-  // make sure we have updated reference data before we start folding any constants
-  recalculateReferenceData();
   do {
     TreeSimplifyingVisitor folding_visitor(ctx);
     visit(&folding_visitor);
     optimized = folding_visitor.mFoldedLevel;
-
-    // reference data may have changed since we folded constants
-    if (optimized)
-      recalculateReferenceData();
   } while (optimized);
 }
 
@@ -329,9 +323,6 @@ LSLIdentifier *LSLIdentifier::clone() {
   id->setSymbol(getSymbol());
   id->setConstantPrecluded(getConstantPrecluded());
   id->setConstantValue(getConstantValue());
-  if (auto *sym = getSymbol()) {
-    sym->addReference();
-  }
   return id;
 }
 

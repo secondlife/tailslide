@@ -200,6 +200,9 @@ class LSLASTNode : public TrackableObject {
     // prev, next and parent as appropriate
     static void replaceNode(LSLASTNode *old_node, LSLASTNode *replacement);
 
+    // Reference tracking for symbols
+    void incrementSymbolReferences();
+    void decrementSymbolReferences();
 
     void                setType(LSLType *type) { _mType = type;   }
     class LSLType *getType()                    { return _mType;    }
@@ -277,6 +280,8 @@ class LSLASTNode : public TrackableObject {
     LSLASTNode *_mParent;
     LSLASTNode *_mNext;
     LSLASTNode *_mPrev;
+
+    inline void adjustSymbolReferences(bool decrement);
 
   protected:
     bool                        _mDeclarationAllowed;

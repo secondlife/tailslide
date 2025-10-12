@@ -84,6 +84,7 @@ void LSLASTNode::pushChild(LSLASTNode *child) {
     _mChildrenTail = child;
   }
   assert (child != this);
+  child->incrementSymbolReferences();
 }
 
 LSLASTNode *LSLASTNode::takeChild(int child_num) {
@@ -96,6 +97,8 @@ LSLASTNode *LSLASTNode::takeChild(int child_num) {
 
 void LSLASTNode::removeChild(LSLASTNode *child) {
   if (child == nullptr) return;
+
+  child->decrementSymbolReferences();
 
   LSLASTNode *prev_child = child->getPrev();
   LSLASTNode *next_child = child->getNext();
@@ -134,6 +137,9 @@ void LSLASTNode::setPrev(LSLASTNode *newprev) {
 
 void LSLASTNode::replaceNode(LSLASTNode *old_node, LSLASTNode *replacement) {
   assert(replacement != nullptr && old_node != nullptr);
+  old_node->decrementSymbolReferences();
+  replacement->incrementSymbolReferences();
+
   replacement->setPrev(old_node->getPrev());
   replacement->setNext(old_node->getNext());
   auto *parent = old_node->getParent();
@@ -152,6 +158,54 @@ void LSLASTNode::replaceNode(LSLASTNode *old_node, LSLASTNode *replacement) {
   old_node->_mPrev = nullptr;
   old_node->setParent(nullptr);
   replacement->setParent(parent);
+}
+
+inline void LSLASTNode::adjustSymbolReferences(bool decrement) {
+  // No sense in doing this while we're just parsing, we won't even have
+  // symbols yet at that point.
+  if (!mContext || mContext->parsing) return;
+
+  // Handle this node based on its type
+  if (getNodeType() == NODE_IDENTIFIER) {
+    auto *id = static_cast<LSLIdentifier*>(this);
+    if (auto *sym = id->getSymbol()) {
+      if (decrement) {
+        sym->removeReference();
+      } else {
+        sym->addReference();
+      }
+    }
+  } else if (getNodeType() == NODE_EXPRESSION) {
+    auto *expr = static_cast<LSLExpression*>(this);
+    if (operation_mutates(expr->getOperation())) {
+      auto *child = static_cast<LSLLValueExpression*>(expr->getChild(0));
+      if (child && child->getNodeSubType() == NODE_LVALUE_EXPRESSION) {
+        auto *sym = child->getSymbol();
+        if (sym && sym->getSubType() != SYM_BUILTIN) {
+          if (decrement) {
+            sym->removeAssignment();
+          } else {
+            sym->addAssignment();
+          }
+        }
+      }
+    }
+  }
+
+  // Recurse through all children
+  for (auto *child : *this) {
+    if (child) {
+      child->adjustSymbolReferences(decrement);
+    }
+  }
+}
+
+void LSLASTNode::incrementSymbolReferences() {
+  adjustSymbolReferences(false);
+}
+
+void LSLASTNode::decrementSymbolReferences() {
+  adjustSymbolReferences(true);
 }
 
 void LSLASTNode::visit(ASTVisitor *visitor) {
