@@ -1,4 +1,5 @@
 #include "passes/desugaring.hh"
+#include "passes/constant_expression_simplifier.hh"
 #include "testutils.hh"
 
 using namespace Tailslide;
@@ -133,6 +134,21 @@ TEST_CASE("desugaring.lsl") {
   checkPrettyPrintOutput("desugaring.lsl", ctx, pretty_ctx, [](LSLScript *script) {
     LLConformantDeSugaringVisitor visitor(script->mContext->allocator, false);
     script->visit(&visitor);
+  });
+}
+
+TEST_CASE("constant_simplifier_test.lsl") {
+  OptimizationOptions ctx{false};
+  PrettyPrintOpts pretty_ctx {};
+  checkPrettyPrintOutput("constant_simplifier_test.lsl", ctx, pretty_ctx, [](LSLScript *script) {
+    // Run desugaring first to inject typecasts
+    LLConformantDeSugaringVisitor desugaring_visitor(script->mContext->allocator, false);
+    script->visit(&desugaring_visitor);
+    // Recalculate constant values for newly-injected nodes
+    script->propagateValues();
+    // Run constant expression simplifier
+    ConstantExpressionSimplifier simplifier(script->mContext->allocator);
+    script->visit(&simplifier);
   });
 }
 

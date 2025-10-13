@@ -117,6 +117,7 @@ add_library(libtailslide STATIC
         libtailslide/passes/type_checking.cc
         libtailslide/passes/tree_print.cc
         libtailslide/passes/tree_simplifier.cc
+        libtailslide/passes/constant_expression_simplifier.cc
         libtailslide/passes/values.cc
         libtailslide/passes/lso/bytecode_compiler.cc
         libtailslide/passes/lso/library_funcs.cc
