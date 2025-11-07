@@ -34,7 +34,7 @@ On OS X you _must_ install the Homebrew versions of `flex` and `bison` because t
 versions provided with XCode are extremely old.
 
 ```bash
-git clone https://github.com/SaladDais/tailslide.git
+git clone https://github.com/secondlife/tailslide.git
 cd tailslide
 mkdir build
 cd build
