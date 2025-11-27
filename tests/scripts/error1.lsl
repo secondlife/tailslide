@@ -46,6 +46,10 @@ default {
         llOwnerSay(k + "foo");      // key + str is not valid, even             $[E10002]
                                     // with implicit promotion between the two.
         list l = [llOwnerSay("")];  // no putting voids in lists!               $[E10036] $[E20009]
+        if (llOwnerSay("")) {}      // void expr in condition                    $[E10038] $[E20007]
+        while (llOwnerSay("")) {}   // void expr in condition                    $[E10038] $[E20014]
+        do {} while (llOwnerSay("")); // void expr in condition                  $[E10038] $[E20014]
+        for (; llOwnerSay("");) {}  // void expr in condition                    $[E10038] $[E20014]
     }
 
     touch_start() {                 // requires parameters                      $[E10029]

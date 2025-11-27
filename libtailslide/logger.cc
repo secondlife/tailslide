@@ -206,7 +206,8 @@ const char *Logger::_sErrorMessages[] = {
         "Lists may not contain other lists",
         "May not cast %s to %s",
         "Lists may not contain nulls",
-        "Stack-heap collision"
+        "Stack-heap collision",
+        "Void expression used as condition"
 };
 
 const char *Logger::_sWarningMessages[] = {

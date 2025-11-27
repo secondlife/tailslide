@@ -27,5 +27,6 @@ class TypeCheckVisitor: public DepthFirstASTVisitor {
     virtual bool visit(LSLPrintExpression *print_expr);
     
     void handleDeclaration(LSLASTNode *decl_node);
+    void validateCheckExpr(LSLExpression *check_expr);
 };
 }

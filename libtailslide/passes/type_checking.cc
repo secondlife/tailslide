@@ -126,6 +126,14 @@ bool TypeCheckVisitor::visit(LSLReturnStatement *ret_stmt) {
   return true;
 }
 
+void TypeCheckVisitor::validateCheckExpr(LSLExpression *check_expr) {
+  if (!check_expr)
+    return;
+  if (check_expr->getIType() == LST_NULL) {
+    NODE_ERROR(check_expr, E_VOID_IN_CONDITION);
+  }
+}
+
 static bool is_branch_empty(LSLASTNode *branch) {
   if (branch == nullptr || branch->getNodeType() == NODE_NULL)
     return true;
@@ -142,6 +150,7 @@ static bool is_branch_empty(LSLASTNode *branch) {
 
 bool TypeCheckVisitor::visit(LSLIfStatement *if_stmt) {
   if_stmt->setType(TYPE(LST_NULL));
+  validateCheckExpr(if_stmt->getCheckExpr());
   // warn if main branch is an empty statement and secondary branch is null
   // or empty
   if (is_branch_empty(if_stmt->getTrueBranch()) && is_branch_empty(if_stmt->getFalseBranch())) {
@@ -151,6 +160,7 @@ bool TypeCheckVisitor::visit(LSLIfStatement *if_stmt) {
 }
 
 bool TypeCheckVisitor::visit(LSLForStatement *for_stmt) {
+  validateCheckExpr(for_stmt->getCheckExpr());
   if (is_branch_empty(for_stmt->getBody())) {
     NODE_ERROR(for_stmt, W_EMPTY_LOOP);
   }
@@ -158,6 +168,7 @@ bool TypeCheckVisitor::visit(LSLForStatement *for_stmt) {
 }
 
 bool TypeCheckVisitor::visit(LSLDoStatement *do_stmt) {
+  validateCheckExpr(do_stmt->getCheckExpr());
   if (is_branch_empty(do_stmt->getBody())) {
     NODE_ERROR(do_stmt, W_EMPTY_LOOP);
   }
@@ -165,6 +176,7 @@ bool TypeCheckVisitor::visit(LSLDoStatement *do_stmt) {
 }
 
 bool TypeCheckVisitor::visit(LSLWhileStatement *while_stmt) {
+  validateCheckExpr(while_stmt->getCheckExpr());
   if (is_branch_empty(while_stmt->getBody())) {
     NODE_ERROR(while_stmt, W_EMPTY_LOOP);
   }
