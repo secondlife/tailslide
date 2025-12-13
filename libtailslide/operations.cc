@@ -655,14 +655,22 @@ LSLConstant *TailslideOperationBehavior::cast(LSLType *to_type, LSLFloatConstant
       );
     }
     case LST_INTEGER: {
+      // Cast to float first - this is how LSL-on-Mono works.
+      float f = (float)v;
       int32_t new_val;
-      if (std::isfinite(v)) {
-        // We cast to int64 first to fix AArch64 behavior.
-        // Yes, we intentionally cast away the extra precision first,
-        // this is how LSL-on-Mono works.
-        new_val = (int32_t)((int64_t)((float)v));
+      // Emulate x86 CVTTSS2SI semantics: out-of-range values become INT32_MIN.
+      // This avoids UB on AArch64 where float->int conversions saturate.
+      // Using negated in-range check so NaN (where all comparisons are false)
+      // also falls through to INT32_MIN.
+      // Again, in practice this is what Mono will do on x86. Technically casting
+      // a float to int in Mono is UB as well, and will use platform casting semantics.
+      // SL has always run on x86 so just emulate that even if we're on a platform
+      // that uses saturating float->int.
+      // https://learn.microsoft.com/en-us/dotnet/core/compatibility/jit/9.0/fp-to-integer
+      // has some more info about new behavior regarding this in .NET.
+      if (f >= -2147483648.0f && f < 2147483648.0f) {
+        new_val = (int32_t)f;
       } else {
-        // this is the result for -Inf +Inf and NaN
         new_val = INT32_MIN;
       }
       return _mAllocator->newTracked<LSLIntegerConstant>(new_val);

@@ -1,6 +1,10 @@
 #include "tailslide.hh"
 #include "doctest.hh"
 #include "bitstream.hh"
+#include "operations.hh"
+
+#include <cmath>
+#include <limits>
 
 using namespace Tailslide;
 
@@ -130,6 +134,65 @@ TEST_CASE("LLoc comparison works correctly") {
   CHECK(bigger > smaller_sameline);
   CHECK(smaller < bigger);
   CHECK(smaller_sameline < bigger);
+}
+
+TEST_CASE("Float to int cast boundary conditions") {
+  // Tests that float->int cast emulates x86 CVTTSS2SI semantics:
+  // in-range values truncate toward zero, out-of-range/NaN/Inf become INT32_MIN
+  ScriptAllocator allocator;
+  ScriptContext context {nullptr, &allocator};
+  allocator.setContext(&context);
+  TailslideOperationBehavior behavior(&allocator);
+  LSLType *int_type = TYPE(LST_INTEGER);
+
+  auto cast_float = [&](double v) -> int32_t {
+    auto *fconst = allocator.newTracked<LSLFloatConstant>(v);
+    auto *result = behavior.cast(int_type, fconst, fconst->getLoc());
+    REQUIRE(result != nullptr);
+    REQUIRE(result->getNodeSubType() == NODE_INTEGER_CONSTANT);
+    return ((LSLIntegerConstant*)result)->getValue();
+  };
+
+  SUBCASE("Normal in-range values") {
+    CHECK_EQ(cast_float(0.0), 0);
+    CHECK_EQ(cast_float(1.5), 1);
+    CHECK_EQ(cast_float(-1.5), -1);
+    CHECK_EQ(cast_float(100.9), 100);
+    CHECK_EQ(cast_float(-100.9), -100);
+  }
+
+  SUBCASE("Boundary values near INT32_MAX") {
+    // INT32_MAX = 2147483647, but 2147483647.0f rounds to 2147483648.0f
+    // So we test with values that are representable
+    CHECK_EQ(cast_float(2147483520.0), 2147483520);  // Largest float < 2^31
+    CHECK_EQ(cast_float(2147483648.0), INT32_MIN);   // 2^31, out of range
+    CHECK_EQ(cast_float(3000000000.0), INT32_MIN);   // Clearly out of range
+  }
+
+  SUBCASE("Boundary values near INT32_MIN") {
+    // INT32_MIN = -2147483648, exactly representable in float
+    CHECK_EQ(cast_float(-2147483648.0), INT32_MIN);  // Exactly INT32_MIN, valid
+    CHECK_EQ(cast_float(-2147483904.0), INT32_MIN);  // Just below INT32_MIN
+    CHECK_EQ(cast_float(-3000000000.0), INT32_MIN);  // Clearly out of range
+  }
+
+  SUBCASE("Very large values") {
+    CHECK_EQ(cast_float(1e20), INT32_MIN);
+    CHECK_EQ(cast_float(-1e20), INT32_MIN);
+    CHECK_EQ(cast_float(1e38), INT32_MIN);
+    CHECK_EQ(cast_float(-1e38), INT32_MIN);
+  }
+
+  SUBCASE("Infinity") {
+    CHECK_EQ(cast_float(std::numeric_limits<double>::infinity()), INT32_MIN);
+    CHECK_EQ(cast_float(-std::numeric_limits<double>::infinity()), INT32_MIN);
+  }
+
+  SUBCASE("NaN") {
+    CHECK_EQ(cast_float(std::nan("")), INT32_MIN);
+    CHECK_EQ(cast_float(-std::nan("")), INT32_MIN);
+    CHECK_EQ(cast_float(std::numeric_limits<double>::quiet_NaN()), INT32_MIN);
+  }
 }
 
 TEST_SUITE_END();
