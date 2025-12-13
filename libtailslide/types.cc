@@ -231,30 +231,31 @@ class LSLType *LSLType::getResultType(LSLOperator op, LSLType *right) {
   // go through each entry in the operator result table
   for (i = 0; OPERATOR_RESULTS[i][0] != -1; i++) {
 
+    const auto &operator_params = OPERATOR_RESULTS[i];
     // no operator match
-    if (OPERATOR_RESULTS[i][0] != op)
+    if (operator_params[0] != op)
       continue;
 
     // the left side must match our left side
-    if (OPERATOR_RESULTS[i][1] != getIType() && OPERATOR_RESULTS[i][1] != LST_ANY)
+    if (operator_params[1] != getIType() && (operator_params[1] != LST_ANY || getIType() == LST_NULL))
       continue;
 
     bool match;
 
     if (right == nullptr)
       // right IS empty and matches nothing
-      match = (OPERATOR_RESULTS[i][2] == LST_NONE);
+      match = (operator_params[2] == LST_NONE);
     else
       // or right isn't empty and matches our side
-      match = (OPERATOR_RESULTS[i][2] == LST_ANY ||
-               OPERATOR_RESULTS[i][2] == (int) right->getIType());
+      match = ((operator_params[2] == LST_ANY && right->getIType() != LST_NULL) ||
+               operator_params[2] == (int) right->getIType());
 
     // no type match on the operation
     if (!match)
       continue;
 
     // send back the type
-    auto *ret_type = TYPE((LSLIType) OPERATOR_RESULTS[i][3]);
+    auto *ret_type = TYPE((LSLIType) operator_params[3]);
     // for compound assignment operators the type of the operation's retval
     // must additionally match the type of the lvalue, or it is not a valid
     // compound assignment.

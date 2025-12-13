@@ -111,6 +111,7 @@ SIMPLE_LINT_TEST_CASE("tltp/browser.lsl")
 SIMPLE_LINT_TEST_CASE("tltp/exporter.lsl")
 SIMPLE_LINT_TEST_CASE("tltp/server.lsl")
 SIMPLE_LINT_TEST_CASE("bugs/mutable_global_rvalue.lsl")
+SIMPLE_LINT_TEST_CASE("list_append_void.lsl")
 
 
 TEST_CASE("type_error_no_assert.lsl") {
