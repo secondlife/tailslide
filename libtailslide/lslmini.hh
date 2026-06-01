@@ -406,7 +406,7 @@ class LSLExpression : public LSLASTNode {
   virtual bool nodeAllowsFolding() { return true; };
   LSLOperator getOperation() const {return _mOperation;};
   void setOperation(LSLOperator op) {_mOperation = op;};
-  void setResultNeeded(bool result_needed) { _mResultNeeded = result_needed; };
+  virtual void setResultNeeded(bool result_needed) { _mResultNeeded = result_needed; };
   bool getResultNeeded() { return _mResultNeeded; }
   protected:
   LSLOperator _mOperation;
@@ -605,6 +605,10 @@ public:
       return "parenthesis expression";
     };
     virtual LSLNodeSubType getNodeSubType() { return NODE_PARENTHESIS_EXPRESSION; };
+    void setResultNeeded(bool result_needed) override {
+      LSLExpression::setResultNeeded(result_needed);
+      getChildExpr()->setResultNeeded(result_needed);
+    };
 };
 
 

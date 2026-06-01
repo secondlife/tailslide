@@ -26,6 +26,26 @@ ldc.i4.4
 dup
 stloc.s 0
 stloc.s 1
+ldc.i4.5
+stloc.s 0
+ldc.i4.6
+stloc.s 0
+ldc.i4.0
+stloc.s 0
+LabelTempJump0:
+ldc.i4.3
+ldloc.s 0
+cgt
+brfalse LabelTempJump1
+ldc.i4.1
+ldloc.s 0
+add
+stloc.s 0
+br LabelTempJump0
+LabelTempJump1:
+ldc.r8 (00 00 00 00 00 00 f0 3f)
+call float32 class [LslLibrary]LindenLab.SecondLife.Library::'llFrand'(float32)
+pop
 ldc.r8 (00 00 00 00 00 00 f0 3f)
 call float32 class [LslLibrary]LindenLab.SecondLife.Library::'llFrand'(float32)
 pop
