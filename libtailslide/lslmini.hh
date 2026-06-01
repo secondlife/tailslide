@@ -601,10 +601,10 @@ public:
       : LSLExpression(ctx, 1, expr) { _mOperation = OP_PARENS; };
     NODE_FIELD_GS(LSLExpression, ChildExpr, 0)
 
-    virtual std::string getNodeName() {
+    std::string getNodeName() override {
       return "parenthesis expression";
     };
-    virtual LSLNodeSubType getNodeSubType() { return NODE_PARENTHESIS_EXPRESSION; };
+    LSLNodeSubType getNodeSubType() override { return NODE_PARENTHESIS_EXPRESSION; };
     void setResultNeeded(bool result_needed) override {
       LSLExpression::setResultNeeded(result_needed);
       getChildExpr()->setResultNeeded(result_needed);
