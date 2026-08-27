@@ -2,6 +2,7 @@
 #define ALLOCATOR_HH
 
 #include <functional>
+#include <new>
 #include <vector>
 #include <cstring>
 #include <cstdlib>
@@ -22,6 +23,9 @@ public:
     ScriptAllocator() = default;
     virtual ~ScriptAllocator();
 
+    ScriptAllocator(const ScriptAllocator &) = delete;
+    ScriptAllocator &operator=(const ScriptAllocator &) = delete;
+
     void setContext(ScriptContext *context) { _mContext = context;};
 
     template<typename TClazz, typename... Args>
@@ -34,6 +38,9 @@ public:
 
     char *alloc(size_t size) {
       char *val = (char *)malloc(size);
+      // callers write through this immediately without checking, so fail loudly
+      if (!val)
+        throw std::bad_alloc();
       _mMallocs.emplace_back(val);
       return val;
     }

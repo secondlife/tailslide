@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
     logger->printReport();
   }
 
-  if (!logger->getErrors()) {
+  if (script && !logger->getErrors()) {
     if (vm.count("lso-compile")) {
       auto lso_dest = vm["lso-compile"].as<std::string>();
       LSOScriptCompiler lso_visitor(&parser.allocator);
@@ -190,6 +190,10 @@ int main(int argc, char **argv) {
 
       std::ofstream f(lso_dest, std::ios::binary);
       f.write((const char *) lso_visitor.mScriptBS.data(), (std::streamsize) lso_visitor.mScriptBS.size());
+      if (!f) {
+        std::cerr << "failed to write " << lso_dest << "\n";
+        return 1;
+      }
     } else if (vm.count("mono-compile")) {
       auto lso_dest = vm["mono-compile"].as<std::string>();
       MonoScriptCompiler mono_visitor(&parser.allocator);
@@ -198,6 +202,10 @@ int main(int argc, char **argv) {
       std::ofstream f(lso_dest, std::ios::binary);
       std::string cil_code {mono_visitor.mCIL.str()};
       f.write(cil_code.c_str(), (std::streamsize) cil_code.size());
+      if (!f) {
+        std::cerr << "failed to write " << lso_dest << "\n";
+        return 1;
+      }
     }
   }
   return logger->getErrors();

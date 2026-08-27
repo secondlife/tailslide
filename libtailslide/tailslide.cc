@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <string>
 
 #include "tailslide.hh"
@@ -23,11 +24,29 @@ ScopedScriptParser::ScopedScriptParser(LSLSymbolTable *builtins) : logger(&alloc
     context.builtins = &gBuiltinsSymbolTable;
 }
 
+ScopedScriptParser::~ScopedScriptParser() {
+  // parseInternal() normally tears the scanner down, but it won't run if
+  // tailslide_parse() threw, or if initScanner() was called without a
+  // following parse.
+  destroyScanner();
+}
+
+void ScopedScriptParser::destroyScanner() {
+  if (context.scanner) {
+    tailslide_lex_destroy(context.scanner);
+    context.scanner = nullptr;
+  }
+}
+
 // make sure we don't leak an FH if we throw
 class FileCloser {
   public:
     explicit FileCloser(FILE *file): _mFile(file) {};
     ~FileCloser() {fclose(_mFile);};
+
+    FileCloser(const FileCloser &) = delete;
+    FileCloser &operator=(const FileCloser &) = delete;
+
     FILE *_mFile;
 };
 
@@ -36,7 +55,7 @@ LSLScript *ScopedScriptParser::parseLSLFile(const std::string &filename) {
   assert(!script);
   FILE *yyin = fopen(filename.c_str(), "rb");
   if (yyin == nullptr) {
-    throw "couldn't open file";
+    throw std::runtime_error("couldn't open file");
   }
   FileCloser closer(yyin);
   return parseLSLFile(yyin);
@@ -65,6 +84,9 @@ void ScopedScriptParser::initScanner() {
   // it magically pass along the current script context.
   allocator.setContext(&context);
 
+  // a previous parse that threw may have left a scanner behind; don't leak it
+  destroyScanner();
+
   // initialize flex
   tailslide_lex_init_extra(&context, &context.scanner);
 }
@@ -76,7 +98,7 @@ void ScopedScriptParser::parseInternal() {
   context.parsing = false;
 
   // clean up flex
-  tailslide_lex_destroy(context.scanner);
+  destroyScanner();
   ast_sane = context.ast_sane;
   script = context.script;
 }

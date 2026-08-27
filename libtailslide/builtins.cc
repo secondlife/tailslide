@@ -284,6 +284,9 @@ if(sscanf(value, (fmt), __VA_ARGS__) != num) { \
       ));
     }
   }
+
+  if (fp != nullptr)
+    fclose(fp);
 }
 
 }

@@ -92,7 +92,7 @@ LSLConstant *TailslideOperationBehavior::operation(
           RET_IF_ZERO(ov);
           // Protect against underflows, see SL-31252
           if (ov == -1)
-            nv = -1 * ov;
+            nv = (int32_t)((uint32_t)-1 * (uint32_t)value);
           else
             nv = value / ov;
           break;
@@ -583,7 +583,7 @@ LSLConstant *TailslideOperationBehavior::cast(LSLType *to_type, LSLStringConstan
       // Need to explicitly determine what the base should be, we only support
       // base 10 and base 16 and we don't want `011` to be treated as octal!
       // This check is safe because `cv` must be a null terminated string.
-      if (v[0] == '0' && (v[1] == 'x' || v[2] == 'X'))
+      if (v[0] == '0' && (v[1] == 'x' || v[1] == 'X'))
         base = 16;
       // This strtoul is weird in that we're using a signed int, but it matches
       // the behavior of upstream, so whatever.

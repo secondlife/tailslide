@@ -54,6 +54,18 @@ default {
         // uninitialized rotation is <0, 0, 0, 1>, not <0, 0, 0, 0>!
         if ( uninit_r == <0, 0, 0, 1> ) return; // $[E20012]
         if ( k == NULL_KEY && k == k2 ) return;  // $[E20012]
+        // uppercase hex prefix is hex too, and a one-char string must not be
+        // read past its terminator while sniffing for the prefix
+        if ( (integer)"0X1F" == 31 ) return;     // $[E20012]
+        if ( (integer)"0" == 0 ) return;         // $[E20012]
+        // dividing by -1 negates, and INT_MIN / -1 wraps back to INT_MIN
+        if ( 5 / -1 == -5 ) return;              // $[E20012]
+        if ( 0x80000000 / -1 == 0x80000000 ) return; // $[E20012]
+        // both references inline the symbol's constant value; the second must
+        // get its own copy rather than stealing the node from the first
+        integer dup = 7;
+        if ( dup == 7 ) return;                  // $[E20012]
+        if ( dup == 7 ) return;                  // $[E20012]
 
         llFrand(r.z);
         llFrand((float)"inf");

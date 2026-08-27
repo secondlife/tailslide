@@ -86,15 +86,20 @@ bool TypeCheckVisitor::visit(LSLReturnStatement *ret_stmt) {
   LSLASTNode *effective_parent = ret_stmt->getParent();
 
   // crawl up until we find an event handler or global func
-  while (ancestor->getNodeType() != NODE_EVENT_HANDLER &&
+  while (ancestor && ancestor->getNodeType() != NODE_EVENT_HANDLER &&
       ancestor->getNodeType() != NODE_GLOBAL_FUNCTION)
     ancestor = ancestor->getParent();
+  // a return with no enclosing handler or function isn't something the grammar
+  // should produce, but don't walk off the root if the tree is malformed.
+  if (!ancestor)
+    return true;
   // figure out if we're directly under an event handler or global func
   // or nested within a control statement
-  while (effective_parent->getNodeSubType() == NODE_COMPOUND_STATEMENT)
+  while (effective_parent && effective_parent->getNodeSubType() == NODE_COMPOUND_STATEMENT)
     effective_parent = effective_parent->getParent();
-  bool func_is_parent = effective_parent->getNodeType() == NODE_EVENT_HANDLER ||
-                        effective_parent->getNodeType() == NODE_GLOBAL_FUNCTION;
+  bool func_is_parent = effective_parent &&
+                        (effective_parent->getNodeType() == NODE_EVENT_HANDLER ||
+                         effective_parent->getNodeType() == NODE_GLOBAL_FUNCTION);
 
   auto *ancestor_type = ancestor->getChild(0)->getType();
   auto *ret_expr = ret_stmt->getExpr();

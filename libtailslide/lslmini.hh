@@ -581,7 +581,8 @@ public:
     LSLConstantExpression( ScriptContext *ctx, LSLConstant *constant )
       : LSLExpression(ctx) {
       assert(constant);
-      if (constant->isStatic())
+      // if this is a static or something already parented to a tree, we must copy
+      if (constant->isStatic() || constant->getParent())
         constant = constant->copy(ctx->allocator);
       pushChild(constant);
       _mConstantValue = constant;

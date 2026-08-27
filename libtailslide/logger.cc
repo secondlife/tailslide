@@ -168,7 +168,9 @@ std::string LogMessage::toString() const {
 
 /// ERROR MESSAGE
 
-const char *Logger::_sErrorMessages[] = {
+// Sized off the enum so the table can never be indexed out of bounds by a
+// valid ErrorCode; a missing message reads as null rather than as garbage.
+const char *Logger::_sErrorMessages[E_LAST - E_ERROR] = {
         "ERROR",
         "Duplicate declaration of `%s'; previously declared at (%d, %d).",
         "Invalid operator: %s %s %s.",
@@ -210,7 +212,7 @@ const char *Logger::_sErrorMessages[] = {
         "Void expression used as condition"
 };
 
-const char *Logger::_sWarningMessages[] = {
+const char *Logger::_sWarningMessages[W_LAST - W_WARNING] = {
         "WARN",
         "Declaration of `%s' in this scope shadows previous declaration at (%d, %d)",
         "Suggest parentheses around assignment used as truth value.",

@@ -15,6 +15,13 @@ namespace Tailslide {
 
 struct ScopedScriptParser {
     explicit ScopedScriptParser(LSLSymbolTable *builtins);
+    ~ScopedScriptParser();
+
+    // Owns an arena that frees every tracked object in its dtor, so copying
+    // would double-free the whole AST.
+    ScopedScriptParser(const ScopedScriptParser &) = delete;
+    ScopedScriptParser &operator=(const ScopedScriptParser &) = delete;
+
     ScriptAllocator allocator {};
     Logger logger;
     LSLScript *script = nullptr;
@@ -29,6 +36,7 @@ struct ScopedScriptParser {
   protected:
     void initScanner();
     void parseInternal();
+    void destroyScanner();
 };
 
 }
